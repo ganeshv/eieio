@@ -1,3 +1,5 @@
+# A self-contained v5 BMP file generator and drawing functions.
+
 class SimpleBMP:
     def __init__(self, width, height):
         self.width = width

@@ -3,21 +3,15 @@ import psutil
 import os
 from collections import deque
 
-from AppKit import NSAttributedString, NSImage
-from PyObjCTools.Conversion import propertyListFromPythonCollection
-from Cocoa import NSFont, NSFontAttributeName
-from Foundation import NSData
+from AppKit import NSAttributedString
 
-from bmp import SimpleBMP
+from utils import bmp_bytes_to_nsimage, create_bar_icon, fixed_width_font
 
-class DynamicMenubarApp(object):
+class CPUMenubarApp(rumps.App):
     def __init__(self):
-        font = NSFont.fontWithName_size_("Menlo", 14.0)
-        self.attributes = propertyListFromPythonCollection({NSFontAttributeName: font}, conversionHelper=lambda x: x)
-
+        super(CPUMenubarApp, self).__init__("CPU Monitor")
         self.cpu_samples = deque(maxlen=25)  # keep the last 25 samples
         self.nprocs = 5
-        self.app = rumps.App("Menubar App")
         self.set_up_menu()
         self.update_menu()
 
@@ -27,10 +21,9 @@ class DynamicMenubarApp(object):
         self.procs = [rumps.MenuItem(" ") for x in range(self.nprocs)]
         self.open_activity_monitor = rumps.MenuItem("Open Activity Monitor", callback=self.open_activity_monitor_action)
         proctitle = rumps.MenuItem("PID    COMMAND      %CPU")
-        string = NSAttributedString.alloc().initWithString_attributes_(proctitle.title, self.attributes)
+        string = NSAttributedString.alloc().initWithString_attributes_(proctitle.title, fixed_width_font)
         proctitle._menuitem.setAttributedTitle_(string)
-        self.app.menu = [self.cpu_item, self.load_avg_item, rumps.separator, proctitle] + self.procs + [rumps.separator, self.open_activity_monitor]
-        self.app.title = "asn"
+        self.menu = [self.cpu_item, self.load_avg_item, rumps.separator, proctitle] + self.procs + [rumps.separator, self.open_activity_monitor]
     
     def update_menu(self, sender=None):
         # CPU usage
@@ -54,51 +47,28 @@ class DynamicMenubarApp(object):
         for i in range(self.nprocs):
             process = processes[i]
             procinfo = f"{process.info['pid']:<6} {process.info['name'][:12]:<12} {process.info['cpu_percent']:.2f}%"
-            string = NSAttributedString.alloc().initWithString_attributes_(procinfo, self.attributes)
+            string = NSAttributedString.alloc().initWithString_attributes_(procinfo, fixed_width_font)
             self.procs[i]._menuitem.setAttributedTitle_(string)
 
         # Update the icon
-        bmp = self.create_cpu_bar_icon(self.cpu_samples)
-        self.app._icon_nsimage = bmp_bytes_to_nsimage(bmp)
+        bmp = create_bar_icon(self.cpu_samples)
+        self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
         try:
-            self.app._nsapp.setStatusBarIcon()
+            self._nsapp.setStatusBarIcon()
         except AttributeError:
             pass
-
-    def create_cpu_bar_icon(self, cpu_samples):
-        # This function should create and return an icon (image path) representing the CPU usage bars
-        width, height = 25, 16
-        line_height = height - 3
-        bgcol = (0, 0, 0, 0)
-        fgcol = (22, 22, 22, 255)
-        img = SimpleBMP(width, height)
-        img.fill_rect(0, 0, width - 1, height - 1, bgcol)
-        img.fill_rect(0, 0, width - 1, 2, fgcol)
-        img.draw_hline(0, width - 1, height - 1, fgcol)
-        startx = width - len(cpu_samples)
-        starty = 2
-        for i, cpu in enumerate(cpu_samples):
-            cpu_height = int(cpu * line_height / 100)
-            img.draw_vline(startx + i, starty, starty + cpu_height, fgcol)
-        return img.export()
-
+    
     def open_activity_monitor_action(self, sender):
         os.system('open -a "Activity Monitor"')
 
     def do_nothing(self, sender):
         pass
 
-
-    def run(self):
-        rumps.Timer(self.update_menu, 5).start()  # Update the menu every 5 seconds
-        self.app.run()
-
-# Convert the BMP byte data to an NSImage
-def bmp_bytes_to_nsimage(bmp_data):
-    data = NSData.dataWithBytes_length_(bmp_data, len(bmp_data))
-    ns_image = NSImage.alloc().initWithData_(data)
-    return ns_image
+def main():
+    app = CPUMenubarApp()
+    rumps.Timer(app.update_menu, 5).start()  # Update the menu every 5 seconds
+    app.run()
+    
 
 if __name__ == '__main__':
-    app = DynamicMenubarApp()
-    app.run()
+    main()
