@@ -5,7 +5,8 @@ from collections import deque
 
 from AppKit import NSAttributedString
 
-from utils import bmp_bytes_to_nsimage, create_bar_icon, fixed_width_font
+from utils import bmp_bytes_to_nsimage, fixed_width_font, disable_dock_icon
+from bmp import SimpleBMP
 
 class CPUMenubarApp(rumps.App):
     def __init__(self):
@@ -51,7 +52,7 @@ class CPUMenubarApp(rumps.App):
             self.procs[i]._menuitem.setAttributedTitle_(string)
 
         # Update the icon
-        bmp = create_bar_icon(self.cpu_samples)
+        bmp = self.create_bar_icon(self.cpu_samples)
         self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
         try:
             self._nsapp.setStatusBarIcon()
@@ -64,7 +65,26 @@ class CPUMenubarApp(rumps.App):
     def do_nothing(self, sender):
         pass
 
+    @staticmethod
+    def create_bar_icon(cpu_samples):
+        # This function should create and return an icon (BMP image bytes) representing the CPU usage bars
+        width, height = 25, 16
+        line_height = height - 3
+        bgcol = (0, 0, 0, 0)
+        fgcol = (22, 22, 22, 255)
+        img = SimpleBMP(width, height)
+        img.fill_rect(0, 0, width - 1, height - 1, bgcol)
+        img.fill_rect(0, 0, width - 1, 2, fgcol)
+        img.draw_hline(0, width - 1, height - 1, fgcol)
+        startx = width - len(cpu_samples)
+        starty = 2
+        for i, cpu in enumerate(cpu_samples):
+            cpu_height = int(cpu * line_height / 100)
+            img.draw_vline(startx + i, starty, starty + cpu_height, fgcol)
+        return img.export()
+
 def main():
+    disable_dock_icon()
     app = CPUMenubarApp()
     rumps.Timer(app.update_menu, 5).start()  # Update the menu every 5 seconds
     app.run()

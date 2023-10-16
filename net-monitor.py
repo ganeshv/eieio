@@ -3,7 +3,7 @@ import psutil
 from collections import deque
 from AppKit import NSAttributedString
 
-from utils import bmp_bytes_to_nsimage, create_bar_icon, fixed_width_font, multiline_font
+from utils import bmp_bytes_to_nsimage, fixed_width_font, multiline_font, disable_dock_icon
 from bmp import SimpleBMP
 
 class NetworkMenubarApp(rumps.App):
@@ -77,7 +77,7 @@ class NetworkMenubarApp(rumps.App):
                         string = NSAttributedString.alloc().initWithString_attributes_(speeds, multiline_font)
                         self._nsapp.nsstatusitem.setAttributedTitle_(string)
                         # Update the icon
-                        bmp = create_bar_icon(self.speeds[interface])
+                        bmp = self.create_bar_icon(self.speeds[interface])
                         self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
                         try:
                             self._nsapp.setStatusBarIcon()
@@ -95,46 +95,43 @@ class NetworkMenubarApp(rumps.App):
         else:
             return f"{bytes_per_second / 1024**3:3.0f}G"
 
-thresholds = [
-    (1024, 7),
-    (512, 6),
-    (256, 5),
-    (128, 4),
-    (64, 3),
-    (32, 2),
-    (16, 1)
-]
+    @staticmethod
+    def compute_bar(speed):
+        thresholds = [ (1024, 7), (512, 6), (256, 5), (128, 4),
+            (64, 3), (32, 2), (16, 1)
+        ]
 
-def compute_bar(speed):
-    for threshold in thresholds:
-        if speed / 1024 >= threshold[0]:
-            return threshold[1]
-    return 0
+        for threshold in thresholds:
+            if speed / 1024 >= threshold[0]:
+                return threshold[1]
+        return 0
 
-def create_bar_icon(samples):
-    # This function should create and return an icon (BMP image bytes)
-    # representing network upload/download bandwidth usage
-    width, height = 25, 16
-    bgcol = (0, 0, 0, 0)
-    fgcol_down = (22, 22, 22, 255)
-    fgcol_up = (22, 22, 22, 128)
-    img = SimpleBMP(width, height)
-    img.fill_rect(0, 0, width - 1, height - 1, bgcol)
-    img.draw_hline(0, width - 1, 7, fgcol_down)
-    img.draw_hline(0, width - 1, 8, fgcol_up)
+    @staticmethod
+    def create_bar_icon(samples):
+        # This function should create and return an icon (BMP image bytes)
+        # representing network upload/download bandwidth usage
+        width, height = 25, 16
+        bgcol = (0, 0, 0, 0)
+        fgcol_down = (22, 22, 22, 255)
+        fgcol_up = (22, 22, 22, 128)
+        img = SimpleBMP(width, height)
+        img.fill_rect(0, 0, width - 1, height - 1, bgcol)
+        img.draw_hline(0, width - 1, 7, fgcol_down)
+        img.draw_hline(0, width - 1, 8, fgcol_up)
 
-    startx = width - len(samples)
-    for i, speed in enumerate(samples):
-        height = compute_bar(speed[0])
-        if height > 0:
-            img.draw_vline(startx + i, 9, 8 + height, fgcol_up)
-        height = compute_bar(speed[1])
-        if height > 0:
-            img.draw_vline(startx + i, 7 - height, 6, fgcol_down)
+        startx = width - len(samples)
+        for i, speed in enumerate(samples):
+            height = NetworkMenubarApp.compute_bar(speed[0])
+            if height > 0:
+                img.draw_vline(startx + i, 9, 8 + height, fgcol_up)
+            height = NetworkMenubarApp.compute_bar(speed[1])
+            if height > 0:
+                img.draw_vline(startx + i, 7 - height, 6, fgcol_down)
 
-    return img.export()
+        return img.export()
 
 def main_network():
+    disable_dock_icon()
     app = NetworkMenubarApp()
     rumps.Timer(app.update_menu, 5).start()  # Update the menu every 5 seconds
     app.run()
