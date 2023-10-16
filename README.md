@@ -46,4 +46,4 @@ there to get monospace fonts, multiline titles, dynamic icons.
 ChatGPT 4 and Github Copilot were heavily used.
 
 ## License
-This extension is licensed under the MIT License. See the LICENSE file for more information.
+MIT License. See the LICENSE file for more information.
