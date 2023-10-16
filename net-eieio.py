@@ -15,17 +15,23 @@ class NetworkMenubarApp(rumps.App):
         self.set_up_menu()
         
 
+    def add_interface(self, interface):
+        item = rumps.MenuItem(title=f"{interface}: ", callback=self.select_interface)
+        item.state = 0
+        self.interface_items[interface] = item
+        self.samples[interface] = deque(maxlen=25)
+        self.speeds[interface] = deque(maxlen=25)
+
     def set_up_menu(self):
-        net_interfaces = psutil.net_if_addrs().keys()
         self.interface_items = {}
-        
-        for interface in net_interfaces:
-            item = rumps.MenuItem(title=f"{interface}: ", callback=self.select_interface)
-            item.state = 0
-            self.interface_items[interface] = item
-            self.samples[interface] = deque(maxlen=25)
-            self.speeds[interface] = deque(maxlen=25)
-        
+        net_io_counters = psutil.net_io_counters(pernic=True)
+        # We want to only add interfaces where there has been some traffic, to avoid cluttering the menu
+        # en0 is always added, active or not.
+        for interface in net_io_counters.keys():
+            net_io = net_io_counters.get(interface, None)
+            if interface == "en0" or (net_io and (net_io.bytes_sent > 0 or net_io.bytes_recv > 0)):
+                self.add_interface(interface)
+
         self.menu = list(self.interface_items.values()) + [rumps.separator]
         self.select_interface(self.interface_items["en0"])
 
@@ -40,10 +46,14 @@ class NetworkMenubarApp(rumps.App):
 
     def update_menu(self, sender=None):
         net_io_counters = psutil.net_io_counters(pernic=True)
-        for interface, item in self.interface_items.items():
+        for interface, net_io in net_io_counters.items():
+            item = self.interface_items.get(interface, None)
+            if item is None and (net_io.bytes_sent > 0 or net_io.bytes_recv > 0):
+                self.add_interface(interface)
+                item = self.interface_items[interface]
+                self.menu.insert_before(rumps.separator, item)
             
-            net_io = net_io_counters.get(interface, None)
-            if net_io:
+            if item is not None:
                 # Store the byte counts in the samples deque
                 self.samples[interface].append((net_io.bytes_sent, net_io.bytes_recv))
                 
@@ -57,13 +67,13 @@ class NetworkMenubarApp(rumps.App):
                     
                     human_upload = self.human_readable_speed(upload_speed)
                     human_download = self.human_readable_speed(download_speed)
-                    title = f"{interface+':':<8} ↓{human_download} ↑{human_upload}"
+                    title = f"{interface+':':<8} {human_download}⬇ {human_upload}⬆"
                     string = NSAttributedString.alloc().initWithString_attributes_(title, fixed_width_font)
                     item._menuitem.setAttributedTitle_(string)
 
                     # Update the menubar title for the selected interface
                     if interface == self.selected_interface:
-                        speeds = f"↑{human_upload}\n↓{human_download}"
+                        speeds = f"{human_upload}⬆\n{human_download}⬇"
                         string = NSAttributedString.alloc().initWithString_attributes_(speeds, multiline_font)
                         self._nsapp.nsstatusitem.setAttributedTitle_(string)
                         # Update the icon
@@ -106,19 +116,21 @@ def create_bar_icon(samples):
     # representing network upload/download bandwidth usage
     width, height = 25, 16
     bgcol = (0, 0, 0, 0)
-    fgcol = (22, 22, 22, 255)
+    fgcol_down = (22, 22, 22, 255)
+    fgcol_up = (22, 22, 22, 128)
     img = SimpleBMP(width, height)
     img.fill_rect(0, 0, width - 1, height - 1, bgcol)
-    img.fill_rect(0, 7, width - 1, 8, fgcol)
+    img.draw_hline(0, width - 1, 7, fgcol_down)
+    img.draw_hline(0, width - 1, 8, fgcol_up)
 
     startx = width - len(samples)
     for i, speed in enumerate(samples):
         height = compute_bar(speed[0])
         if height > 0:
-            img.draw_vline(startx + i, 9, 8 + height, (22, 22, 22, 128))
+            img.draw_vline(startx + i, 9, 8 + height, fgcol_up)
         height = compute_bar(speed[1])
         if height > 0:
-            img.draw_vline(startx + i, 7 - height, 6, fgcol)
+            img.draw_vline(startx + i, 7 - height, 6, fgcol_down)
 
     return img.export()
 
