@@ -1,7 +1,8 @@
 from bmp import SimpleBMP
 from PyObjCTools.Conversion import propertyListFromPythonCollection
 from AppKit import NSAttributedString, NSImage
-from Cocoa import NSFont, NSFontAttributeName
+from Cocoa import (NSFont, NSFontAttributeName, NSBaselineOffsetAttributeName,
+                   NSLeftTextAlignment, NSMutableParagraphStyle, NSParagraphStyleAttributeName)
 from Foundation import NSData
 
 # Convert the BMP byte data to an NSImage
@@ -27,5 +28,10 @@ def create_bar_icon(cpu_samples):
         img.draw_vline(startx + i, starty, starty + cpu_height, fgcol)
     return img.export()
 
-font = NSFont.fontWithName_size_("Menlo", 14.0)
-fixed_width_font = propertyListFromPythonCollection({NSFontAttributeName: font}, conversionHelper=lambda x: x)
+multiline_font = {
+    NSFontAttributeName: NSFont.fontWithName_size_("Menlo", 9.0),
+    NSBaselineOffsetAttributeName: -8.0
+}
+fixed_width_font = {
+    NSFontAttributeName: NSFont.fontWithName_size_("Menlo", 14.0)
+}
