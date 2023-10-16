@@ -69,15 +69,16 @@ class CPUMenubarApp(rumps.App):
     def create_bar_icon(cpu_samples):
         # This function should create and return an icon (BMP image bytes) representing the CPU usage bars
         width, height = 25, 16
-        line_height = height - 3
+        line_height = height - 2
         bgcol = (0, 0, 0, 0)
-        fgcol = (22, 22, 22, 255)
+        bordercol = (22, 22, 22, 255)
+        fgcol = (22, 22, 22, 128)
         img = SimpleBMP(width, height)
         img.fill_rect(0, 0, width - 1, height - 1, bgcol)
-        img.fill_rect(0, 0, width - 1, 2, fgcol)
-        img.draw_hline(0, width - 1, height - 1, fgcol)
+        img.draw_hline(0, width - 1, 0, bordercol)
+        img.draw_hline(0, width - 1, height - 1, bordercol)
         startx = width - len(cpu_samples)
-        starty = 2
+        starty = 1
         for i, cpu in enumerate(cpu_samples):
             cpu_height = int(cpu * line_height / 100)
             img.draw_vline(startx + i, starty, starty + cpu_height, fgcol)

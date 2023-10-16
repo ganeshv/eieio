@@ -73,7 +73,7 @@ class NetworkMenubarApp(rumps.App):
 
                     # Update the menubar title for the selected interface
                     if interface == self.selected_interface:
-                        speeds = f"{human_upload}⬆\n{human_download}⬇"
+                        speeds = f"{human_download}⬇\n{human_upload}⬆"
                         string = NSAttributedString.alloc().initWithString_attributes_(speeds, multiline_font)
                         self._nsapp.nsstatusitem.setAttributedTitle_(string)
                         # Update the icon
@@ -116,17 +116,17 @@ class NetworkMenubarApp(rumps.App):
         fgcol_up = (22, 22, 22, 128)
         img = SimpleBMP(width, height)
         img.fill_rect(0, 0, width - 1, height - 1, bgcol)
-        img.draw_hline(0, width - 1, 7, fgcol_down)
-        img.draw_hline(0, width - 1, 8, fgcol_up)
+        img.draw_hline(0, width - 1, height - 1, fgcol_down)
+        img.draw_hline(0, width - 1, 0, fgcol_down)
 
         startx = width - len(samples)
         for i, speed in enumerate(samples):
-            height = NetworkMenubarApp.compute_bar(speed[0])
-            if height > 0:
-                img.draw_vline(startx + i, 9, 8 + height, fgcol_up)
-            height = NetworkMenubarApp.compute_bar(speed[1])
-            if height > 0:
-                img.draw_vline(startx + i, 7 - height, 6, fgcol_down)
+            bar = NetworkMenubarApp.compute_bar(speed[0])
+            if bar > 0:
+                img.draw_vline(startx + i, 1, bar, fgcol_up)
+            bar = NetworkMenubarApp.compute_bar(speed[1])
+            if bar > 0:
+                img.draw_vline(startx + i, height - 1 - bar, height - 2, fgcol_down)
 
         return img.export()
 

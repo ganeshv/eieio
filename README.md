@@ -18,14 +18,20 @@ will display a bar graph showing upload and download speeds over the last
 couple of minutes on the en0 interface (most commonly the Wifi interface on
 laptops). Click the menu to change the selected interface.
 
+Given the range of possible network speeds, a log scale is used, with the
+lowest level being 16K/sec, and the tallest bar for 1024K/sec and above. Uploads
+are shaded gray and rise from the bottom, downloads are black and grow downwards
+from the top.
+
+(The multiline title is janky, but it looks just about OK on macOS Ventura)
+
 ## And in that Mac he had some chips
 
 `python cpu-monitor.py`
 
 will display a bar graph showing CPU usage over the last couple of minutes.
-The drop-down menu displays the current top 5 CPU-hogs.
-
-(Yes, the multiline title is janky, but it looks just about OK on macOS Ventura)
+The drop-down menu displays the current top 5 CPU-hogs. This graph uses a
+linear scale.
 
 ## And in that Mac he had some disks
 
