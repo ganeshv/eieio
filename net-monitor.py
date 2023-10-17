@@ -79,6 +79,7 @@ class NetworkMenubarApp(rumps.App):
                         # Update the icon
                         bmp = self.create_bar_icon(self.speeds[interface])
                         self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
+                        self._icon_nsimage.setTemplate_(True)
                         try:
                             self._nsapp.setStatusBarIcon()
                         except AttributeError:
