@@ -1,12 +1,11 @@
 import rumps
 import psutil
 from collections import deque
-from AppKit import NSAttributedString
 
-from utils import bmp_bytes_to_nsimage, fixed_width_font, multiline_font, disable_dock_icon
+from utils import App, MenuItem, fixed_width_font, multiline_font, disable_dock_icon
 from bmp import SimpleBMP
 
-class NetworkMenubarApp(rumps.App):
+class NetworkMenubarApp(App):
     def __init__(self):
         super(NetworkMenubarApp, self).__init__("Network Monitor")
         self.samples = {}  # Stores the last 25 byte counts for each interface
@@ -16,7 +15,7 @@ class NetworkMenubarApp(rumps.App):
         
 
     def add_interface(self, interface):
-        item = rumps.MenuItem(title=f"{interface}: ", callback=self.select_interface)
+        item = MenuItem(title=f"{interface}: ", callback=self.select_interface)
         item.state = 0
         self.interface_items[interface] = item
         self.samples[interface] = deque(maxlen=25)
@@ -68,22 +67,15 @@ class NetworkMenubarApp(rumps.App):
                     human_upload = self.human_readable_speed(upload_speed)
                     human_download = self.human_readable_speed(download_speed)
                     title = f"{interface+':':<8} {human_download}⬇ {human_upload}⬆"
-                    string = NSAttributedString.alloc().initWithString_attributes_(title, fixed_width_font)
-                    item._menuitem.setAttributedTitle_(string)
-
+                    item.set_attr_title(title, fixed_width_font)
+                    
                     # Update the menubar title for the selected interface
                     if interface == self.selected_interface:
                         speeds = f"{human_download}⬇\n{human_upload}⬆"
-                        string = NSAttributedString.alloc().initWithString_attributes_(speeds, multiline_font)
-                        self._nsapp.nsstatusitem.setAttributedTitle_(string)
+                        self.set_attr_title(speeds, multiline_font)
                         # Update the icon
                         bmp = self.create_bar_icon(self.speeds[interface])
-                        self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
-                        self._icon_nsimage.setTemplate_(True)
-                        try:
-                            self._nsapp.setStatusBarIcon()
-                        except AttributeError:
-                            pass
+                        self.set_icon(bmp)
 
     @staticmethod
     def human_readable_speed(bytes_per_second):

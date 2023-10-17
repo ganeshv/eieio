@@ -3,12 +3,10 @@ import psutil
 import os
 from collections import deque
 
-from AppKit import NSAttributedString
-
-from utils import bmp_bytes_to_nsimage, fixed_width_font, disable_dock_icon
+from utils import App, MenuItem, fixed_width_font, disable_dock_icon
 from bmp import SimpleBMP
 
-class CPUMenubarApp(rumps.App):
+class CPUMenubarApp(App):
     def __init__(self):
         super(CPUMenubarApp, self).__init__("CPU Monitor")
         self.cpu_samples = deque(maxlen=25)  # keep the last 25 samples
@@ -17,13 +15,12 @@ class CPUMenubarApp(rumps.App):
         self.update_menu()
 
     def set_up_menu(self):
-        self.cpu_item = rumps.MenuItem(title="CPU usage:", callback=self.do_nothing)
-        self.load_avg_item = rumps.MenuItem(title="Load Avg:", callback=self.do_nothing)
-        self.procs = [rumps.MenuItem(" ") for x in range(self.nprocs)]
-        self.open_activity_monitor = rumps.MenuItem("Open Activity Monitor", callback=self.open_activity_monitor_action)
-        proctitle = rumps.MenuItem("PID    COMMAND      %CPU")
-        string = NSAttributedString.alloc().initWithString_attributes_(proctitle.title, fixed_width_font)
-        proctitle._menuitem.setAttributedTitle_(string)
+        self.cpu_item = MenuItem(title="CPU usage:", callback=self.do_nothing)
+        self.load_avg_item = MenuItem(title="Load Avg:", callback=self.do_nothing)
+        self.procs = [MenuItem(" ") for x in range(self.nprocs)]
+        self.open_activity_monitor = MenuItem("Open Activity Monitor", callback=self.open_activity_monitor_action)
+        proctitle = MenuItem("PID    COMMAND      %CPU")
+        proctitle.set_attr_title(proctitle.title, fixed_width_font)
         self.menu = [self.cpu_item, self.load_avg_item, rumps.separator, proctitle] + self.procs + [rumps.separator, self.open_activity_monitor]
     
     def update_menu(self, sender=None):
@@ -48,18 +45,12 @@ class CPUMenubarApp(rumps.App):
         for i in range(self.nprocs):
             process = processes[i]
             procinfo = f"{process.info['pid']:<6} {process.info['name'][:12]:<12} {process.info['cpu_percent']:.2f}%"
-            string = NSAttributedString.alloc().initWithString_attributes_(procinfo, fixed_width_font)
-            self.procs[i]._menuitem.setAttributedTitle_(string)
-
+            self.procs[i].set_attr_title(procinfo, fixed_width_font)
+            
         # Update the icon
         bmp = self.create_bar_icon(self.cpu_samples)
-        self._icon_nsimage = bmp_bytes_to_nsimage(bmp)
-        self._icon_nsimage.setTemplate_(True)
-        try:
-            self._nsapp.setStatusBarIcon()
-        except AttributeError:
-            pass
-    
+        self.set_icon(bmp)
+
     def open_activity_monitor_action(self, sender):
         os.system('open -a "Activity Monitor"')
 
