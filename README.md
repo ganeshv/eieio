@@ -4,11 +4,27 @@ macOS menubar apps for monitoring CPU, network usage. Written in Python.
 
 ## Installation
 
+### Basic
+
   * Clone the repository
   * `pip install rumps psutil`
 
-Use virtualenv or other solutions as per your taste.
-TBD: Document setting up launchd to run this at login time
+Use virtualenv or other solutions as per your taste. Run individual monitor
+programs after activating the virtual environment using
+`python xyz-monitor.py`
+
+### Advanced
+
+This will set things up so that the monitor programs will run on login.
+
+  * Clone the repository
+  * Ensure that `virtualenv` is installed; `pip install virtualenv` or
+    `brew install virtualenv`
+  * Edit the Makefile to choose which monitors you want to run
+  * `make install`
+
+Note that the virtualenv is created in the project directory itself.
+Use `make uninstall` and `make clean` to reverse the above steps.
 
 ## And in that Mac he had some NICs
 

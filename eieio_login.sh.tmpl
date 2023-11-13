@@ -1,0 +1,15 @@
+#!/bin/bash
+
+VE_DIR={{BASEDIR}}/eieio-ve
+
+MONITOR=$1
+PY={{BASEDIR}}/${MONITOR}-monitor.py
+
+if [ -f $PY ]; then
+    . $VE_DIR/bin/activate
+    python $PY
+else
+    echo $PY not found
+    exit 1
+fi
+exit 0
